@@ -1,6 +1,6 @@
 import './index.sass'
 
-import Renderer from './renderer'
+import Firework from './firework'
 
 class Canvas {
   constructor() {
@@ -24,17 +24,19 @@ class Canvas {
 const canvas = new Canvas()
 addEventListener('resize', canvas.size)
 
-let renderer = new Renderer(canvas)
+let fw = new Firework(canvas)
+
 const draw = () => {
-  renderer.render()
+  fw.render()
   requestAnimationFrame(draw)
 }
 draw()
 
+
 if (module.hot) {
-  module.hot.accept('./renderer', () => {
-    renderer = new Renderer(canvas)
+  module.hot.accept('./firework', () => {
+    fw = new Firework(canvas)
   })
-  window.renderer = renderer
-  window.Renderer = Renderer
+  window.fw = fw
+  window.Firework = Firework
 }

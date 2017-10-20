@@ -1,31 +1,54 @@
 import Particle from './particle'
+import { rnd } from './util'
 
-export default class Rocket extends Particle {
+export default class Rocket {
+  constructor(fw, pos, speed, weight, hue, maxHeight) {
+    this.fw = fw
+    this.pos = pos
+    this.speed = speed
+    this.weight = weight
+    this.hue = hue
+    this.dead = false
+    this.maxHeight = maxHeight
+  }
+
   move(deltaT) {
-    super.move(deltaT)
-    if (this.speed[1] > 0) {
+    this.pos = this.pos.map((pos, i) =>
+      pos + deltaT * this.speed[i])
+    if (this.pos[1] < (1 - this.maxHeight) * this.fw.canvas.h) {
       return this.explode()
     }
   }
 
-  shouldRemove(w, h) {
-    return super.shouldRemove(w, h) || this.speed[1] > 0
+  shouldRemove() {
+    return this.dead
   }
 
   explode() {
-    const minV = Math.random() * 100
-    return Array(~~(100 + 100 * Math.random())).fill().map(() => {
-      const v = minV + Math.random() * 100
-      const theta = Math.random() * 360
+    this.dead = true
+    return Array(rnd(this.fw.minParticles, this.fw.maxParticles))
+      .fill().map(() => {
+        const v = rnd(this.fw.minBurstSpeed, this.fw.maxBurstSpeed)
+        const theta = rnd(0, 360)
 
-      return new Particle(
-        this.pos,
-        [v * Math.cos(theta), v * Math.sin(theta)],
-        2,
-        this.hue,
-        10
-      )
-    })
+        return new Particle(
+          this.fw,
+          this.pos,
+          [v * Math.cos(theta), v * Math.sin(theta)],
+          2,
+          this.hue,
+          rnd(this.fw.minLifeSpan, this.fw.maxLifeSpan)
+        )
+      })
+  }
+
+  render(ctx) {
+    const [x, y] = this.pos
+
+    ctx.save()
+    ctx.fillStyle = `hsla(${ this.hue }, 100%, 50%, 1)`
+    ctx.fillRect(x, y, this.weight, this.weight)
+    ctx.restore()
   }
 }
 
