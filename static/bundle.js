@@ -60,7 +60,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "897d4c232f5118d443aa"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "125f4051113904815d77"; // eslint-disable-line no-unused-vars
 /******/ 	var hotRequestTimeout = 10000;
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
@@ -720,14 +720,14 @@
 /******/ 	__webpack_require__.h = function() { return hotCurrentHash; };
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return hotCreateRequire(4)(__webpack_require__.s = 4);
+/******/ 	return hotCreateRequire(5)(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(6)(undefined);
+exports = module.exports = __webpack_require__(7)(undefined);
 // imports
 
 
@@ -744,12 +744,25 @@ exports.push([module.i, "html, body {\n  margin: 0;\n  padding: 0;\n  height: 10
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__rocket__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__util__ = __webpack_require__(4);
 
 
-class Renderer {
+
+class Firework {
   constructor(canvas) {
     this.particles = []
     this.canvas = canvas
+
+    this.minLifeSpan = 5
+    this.maxLifeSpan = 15
+    this.minBurstSpeed = 50
+    this.maxBurstSpeed = 200
+    this.minParticles = 200
+    this.maxParticles = 800
+
+    this.airFriction = .05
+
+    this.frequency = .025
   }
 
   render() {
@@ -757,28 +770,32 @@ class Renderer {
       this.lastT = (new Date()).getTime()
       return
     }
-    if (Math.random() > .9) {
-      this.particles.push(new __WEBPACK_IMPORTED_MODULE_0__rocket__["default"](
-        [this.canvas.w * Math.random(), this.canvas.h],
-        [50 * Math.random() - 25, -200 * Math.random() - 200],
+    const currentT = (new Date()).getTime()
+    const deltaT = (currentT - this.lastT) / 250
+    this.lastT = (new Date()).getTime()
+
+    if (Math.random() > 1 - this.frequency) {
+      this.particles.push(new __WEBPACK_IMPORTED_MODULE_0__rocket__["default"](this,
+        [Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(0, this.canvas.w), this.canvas.h],
+        [Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(-25, 25), -Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(200, 400)],
         3,
-        ~~(360 * Math.random())
+        Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(0, 360),
+        Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(70, 90) / 100
       ))
     }
-    const currentT = (new Date()).getTime()
-    const deltaT = .1 // (currentT - this.lastT) / 250
     this.particles.map(particle => particle.move(deltaT))
       .filter(newParticles => !!newParticles)
       .forEach(newParticles => this.particles.push(...newParticles))
-    this.particles.forEach(particle => particle.render(this.canvas.ctx))
-    this.canvas.ctx.fillStyle = 'rgba(0, 0, 0, .08)'
+
+    this.canvas.ctx.fillStyle = 'rgba(0, 0, 0, .09)'
+    // this.canvas.ctx.globalCompositeOperation = 'source-in'
     this.canvas.ctx.fillRect(0, 0, this.canvas.w, this.canvas.h)
+    this.particles.forEach(particle => particle.render(this.canvas.ctx))
     this.particles = this.particles.filter(particle =>
       !particle.shouldRemove(this.canvas.w, this.canvas.h))
-    this.lastT = (new Date()).getTime()
   }
 }
-/* harmony export (immutable) */ __webpack_exports__["default"] = Renderer;
+/* harmony export (immutable) */ __webpack_exports__["default"] = Firework;
 
 
 if (true) {
@@ -793,34 +810,58 @@ if (true) {
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__particle__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__util__ = __webpack_require__(4);
 
 
-class Rocket extends __WEBPACK_IMPORTED_MODULE_0__particle__["default"] {
+
+class Rocket {
+  constructor(fw, pos, speed, weight, hue, maxHeight) {
+    this.fw = fw
+    this.pos = pos
+    this.speed = speed
+    this.weight = weight
+    this.hue = hue
+    this.dead = false
+    this.maxHeight = maxHeight
+  }
+
   move(deltaT) {
-    super.move(deltaT)
-    if (this.speed[1] > 0) {
+    this.pos = this.pos.map((pos, i) =>
+      pos + deltaT * this.speed[i])
+    if (this.pos[1] < (1 - this.maxHeight) * this.fw.canvas.h) {
       return this.explode()
     }
   }
 
-  shouldRemove(w, h) {
-    return super.shouldRemove(w, h) || this.speed[1] > 0
+  shouldRemove() {
+    return this.dead
   }
 
   explode() {
-    const minV = Math.random() * 100
-    return Array(~~(100 + 100 * Math.random())).fill().map(() => {
-      const v = minV + Math.random() * 100
-      const theta = Math.random() * 360
+    this.dead = true
+    return Array(Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(this.fw.minParticles, this.fw.maxParticles))
+      .fill().map(() => {
+        const v = Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(this.fw.minBurstSpeed, this.fw.maxBurstSpeed)
+        const theta = Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(0, 360)
 
-      return new __WEBPACK_IMPORTED_MODULE_0__particle__["default"](
-        this.pos,
-        [v * Math.cos(theta), v * Math.sin(theta)],
-        2,
-        this.hue,
-        10
-      )
-    })
+        return new __WEBPACK_IMPORTED_MODULE_0__particle__["default"](
+          this.fw,
+          this.pos,
+          [v * Math.cos(theta), v * Math.sin(theta)],
+          2,
+          this.hue,
+          Object(__WEBPACK_IMPORTED_MODULE_1__util__["a" /* rnd */])(this.fw.minLifeSpan, this.fw.maxLifeSpan)
+        )
+      })
+  }
+
+  render(ctx) {
+    const [x, y] = this.pos
+
+    ctx.save()
+    ctx.fillStyle = `hsla(${ this.hue }, 100%, 50%, 1)`
+    ctx.fillRect(x, y, this.weight, this.weight)
+    ctx.restore()
   }
 }
 /* harmony export (immutable) */ __webpack_exports__["default"] = Rocket;
@@ -837,23 +878,22 @@ if (true) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-
-const friction = .05
-
 class Particle {
-  constructor(pos, speed, weight, hue, lifespan) {
+  constructor(fw, pos, speed, weight, hue, lifespan) {
+    this.fw = fw
     this.pos = pos
     this.speed = speed
     this.acceleration = [0, 9.8]
     this.weight = weight
     this.hue = hue
-    this.lifespan = lifespan || Infinity
+    this.lifespan = lifespan
+    this.fullLifespan = lifespan
   }
 
   move(deltaT) {
     this.speed = this.speed.map((speed, i) =>
       speed + deltaT * this.acceleration[i] -
-      friction * speed)
+      this.fw.airFriction * speed)
     this.pos = this.pos.map((pos, i) =>
       pos + deltaT * this.speed[i])
     this.lifespan -= deltaT
@@ -861,10 +901,8 @@ class Particle {
 
   render(ctx) {
     const [x, y] = this.pos
-    let l = 50
-    if (this.lifespan !== Infinity) {
-      l = this.lifespan * 10
-    }
+    const l = 100 * (this.lifespan / this.fullLifespan) * Math.abs(
+      Math.cos(this.lifespan))
 
     ctx.save()
     ctx.fillStyle = `hsla(${ this.hue }, 100%, ${ l }%, 1)`
@@ -872,8 +910,9 @@ class Particle {
     ctx.restore()
   }
 
-  shouldRemove(w, h) {
+  shouldRemove() {
     const [x, y] = this.pos
+    const { w, h } = this.fw.canvas
     return 0 > x || x > w || 0 > y || y > h || this.lifespan < 0
   }
 }
@@ -886,10 +925,21 @@ class Particle {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+const rnd = (min, max) =>
+  min + ~~(Math.random() * (max - min))
+/* harmony export (immutable) */ __webpack_exports__["a"] = rnd;
+
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_sass__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_sass__ = __webpack_require__(6);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__index_sass___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__index_sass__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__renderer__ = __webpack_require__(1);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__firework__ = __webpack_require__(1);
 
 
 
@@ -916,24 +966,26 @@ class Canvas {
 const canvas = new Canvas()
 addEventListener('resize', canvas.size)
 
-let renderer = new __WEBPACK_IMPORTED_MODULE_1__renderer__["default"](canvas)
+let fw = new __WEBPACK_IMPORTED_MODULE_1__firework__["default"](canvas)
+
 const draw = () => {
-  renderer.render()
+  fw.render()
   requestAnimationFrame(draw)
 }
 draw()
 
+
 if (true) {
-  module.hot.accept(1, function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ __WEBPACK_IMPORTED_MODULE_1__renderer__ = __webpack_require__(1); (() => {
-    renderer = new __WEBPACK_IMPORTED_MODULE_1__renderer__["default"](canvas)
+  module.hot.accept(1, function(__WEBPACK_OUTDATED_DEPENDENCIES__) { /* harmony import */ __WEBPACK_IMPORTED_MODULE_1__firework__ = __webpack_require__(1); (() => {
+    fw = new __WEBPACK_IMPORTED_MODULE_1__firework__["default"](canvas)
   })(__WEBPACK_OUTDATED_DEPENDENCIES__); })
-  window.renderer = renderer
-  window.Renderer = __WEBPACK_IMPORTED_MODULE_1__renderer__["default"]
+  window.fw = fw
+  window.Firework = __WEBPACK_IMPORTED_MODULE_1__firework__["default"]
 }
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
@@ -947,7 +999,7 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(7)(content, options);
+var update = __webpack_require__(8)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(true) {
@@ -964,7 +1016,7 @@ if(true) {
 }
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports) {
 
 /*
@@ -1046,7 +1098,7 @@ function toComment(sourceMap) {
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -1092,7 +1144,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(8);
+var	fixUrls = __webpack_require__(9);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -1405,7 +1457,7 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 
